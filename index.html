@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Responsive Image Gallery by SHASHWAT DWIVEDI</title>
+  <style>
+    :root{
+      --bg:#0f1220;
+      --card:#151933;
+      --muted:#9aa4c7;
+      --text:#e8ecff;
+      --accent:#6c8cff;
+      --accent-2:#70e1ff;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:20px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 10% -10%,#1a2042,transparent),
+                  radial-gradient(800px 400px at 110% 10%,#0c1a2f,transparent),
+                  var(--bg);
+      color:var(--text);
+    }
+    header{
+      position:sticky; top:0; z-index:5;
+      backdrop-filter: blur(8px);
+      background:linear-gradient(to bottom, rgba(15,18,32,.85), rgba(15,18,32,.55));
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .wrap{max-width:1100px; margin:0 auto; padding:18px 16px}
+    .title{
+      display:flex; gap:14px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+    }
+    h1{font-size:clamp(20px, 2.4vw, 32px); margin:0; letter-spacing:.3px}
+    .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .filters{display:flex; gap:8px; flex-wrap:wrap}
+    button, .chip{
+      appearance:none; border:1px solid rgba(255,255,255,.12); color:var(--text);
+      background:linear-gradient(180deg, #1a1f3f, #141a33);
+      border-radius:999px; padding:10px 14px; cursor:pointer;
+      transition: transform .15s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+      box-shadow: var(--shadow);
+      font-weight:600; letter-spacing:.2px
+    }
+    .chip[aria-pressed="true"]{
+      background: linear-gradient(180deg, var(--accent), #4c6aff);
+      border-color:transparent;
+    }
+    .search{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+    .search input, select{
+      background:#0d1230; color:var(--text); border:1px solid rgba(255,255,255,.12);
+      padding:10px 12px; border-radius:12px; outline:none; min-width:200px;
+      transition: border-color .2s ease; box-shadow: var(--shadow);
+    }
+    .search input:focus, select:focus{border-color:var(--accent)}
+
+    .gallery{ 
+      display:grid; gap:14px; padding:22px 16px 40px; max-width:1100px; margin:0 auto;
+      grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+    }
+    .item{
+      position:relative; overflow:hidden; border-radius:var(--radius);
+      background:var(--card); aspect-ratio: 4 / 3; border:1px solid rgba(255,255,255,.06);
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, filter .25s ease;
+      box-shadow: var(--shadow);
+      isolation:isolate;
+    }
+    .item img{ width:100%; height:100%; object-fit:cover; display:block; filter:var(--img-filter, none); }
+    .item:hover{ transform: translateY(-4px) scale(1.01); border-color: rgba(112,225,255,.35); }
+    .item::after{
+      content:""; position:absolute; inset:auto 0 0 0; height:40%;
+      background: linear-gradient(to top, rgba(0,0,0,.65), transparent);
+      opacity:0; transition: opacity .25s ease; pointer-events:none;
+    }
+    .item:hover::after{opacity:1}
+    .caption{
+      position:absolute; left:12px; right:12px; bottom:10px; z-index:1;
+      color:#f6f7ff; font-weight:600; letter-spacing:.3px; opacity:0; transform: translateY(6px);
+      transition: opacity .25s ease, transform .25s ease;
+      text-shadow: 0 2px 8px rgba(0,0,0,.5);
+    }
+    .item:hover .caption{ opacity:1; transform: translateY(0); }
+
+    .hide{ display:none !important; }
+
+    .lightbox{ position:fixed; inset:0; display:none; place-items:center; background:rgba(5,8,20,.86); z-index:50; }
+    .lightbox.show{ display:grid; animation:fadeIn .2s ease; }
+    @keyframes fadeIn{ from{ opacity:0 } to { opacity:1 } }
+
+    .lb-inner{ position:relative; width:min(92vw, 1100px); }
+    .lb-img-wrap{ position:relative; border-radius:16px; overflow:hidden; background:#0b1030; }
+    .lb-img{ width:100%; max-height:80vh; object-fit:contain; display:block; }
+
+    .lb-toolbar{ position:absolute; inset:0; display:flex; align-items:center; justify-content:space-between; padding:12px; pointer-events:none; }
+    .lb-toolbar .btn{ pointer-events:auto; background:rgba(0,0,0,.5); border:none; color:white; padding:10px 12px; border-radius:12px; cursor:pointer; font-weight:700; }
+    .lb-toolbar .btn:hover{ background:rgba(0,0,0,.7) }
+
+    .lb-nav{ position:absolute; inset:0; display:flex; align-items:center; justify-content:space-between; pointer-events:none; }
+    .lb-nav button{ pointer-events:auto; background:rgba(0,0,0,.45); border:none; color:white; width:46px; height:46px; border-radius:50%; cursor:pointer; font-size:20px; display:grid; place-items:center; }
+    .lb-nav button:hover{ background:rgba(0,0,0,.7) }
+
+    .lb-caption{ margin-top:10px; text-align:center; color:var(--muted) }
+
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background:#0d1335; border:1px solid rgba(255,255,255,.15); padding:2px 6px; border-radius:6px; }
+    footer{max-width:1100px;margin:0 auto 40px; color:var(--muted); padding:0 16px}
+
+    @media (max-width:520px){
+      .lb-nav button{ width:40px; height:40px; }
+      .caption{ font-size:14px }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="title">
+        <h1>✨ Responsive Image Gallery by SHASHWAT DWIVEDI</h1>
+        <div class="controls">
+          <div class="filters" role="toolbar" aria-label="Category filters">
+            <button class="chip" data-filter="all" aria-pressed="true">All</button>
+            <button class="chip" data-filter="nature">Nature</button>
+            <button class="chip" data-filter="city">City</button>
+            <button class="chip" data-filter="people">People</button>
+            <button class="chip" data-filter="animals">Animals</button>
+          </div>
+          <div class="search">
+            <input id="search" type="search" placeholder="Search captions…" aria-label="Search captions" />
+            <label for="fx" class="visually-hidden">Image effect</label>
+            <select id="fx" title="Image effect">
+              <option value="none">No effect</option>
+              <option value="grayscale(100%)">Grayscale</option>
+              <option value="sepia(70%)">Sepia</option>
+              <option value="saturate(160%)">Saturate</option>
+              <option value="contrast(120%) brightness(105%)">Pop</option>
+              <option value="blur(1px)">Slight Blur</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="gallery" id="gallery" aria-live="polite">
+  
+    <figure class="item" data-category="nature" data-caption="Misty morning in the valley">
+      <img loading="lazy" src="https://picsum.photos/seed/nature1/800/600" alt="Misty valley at sunrise" />
+      <figcaption class="caption">Misty morning in the valley</figcaption>
+    </figure>
+    <figure class="item" data-category="city" data-caption="City skyline at dusk">
+      <img loading="lazy" src="https://picsum.photos/seed/city1/800/600" alt="City skyline at dusk" />
+      <figcaption class="caption">City skyline at dusk</figcaption>
+    </figure>
+    <figure class="item" data-category="people" data-caption="Portrait in soft light">
+      <img loading="lazy" src="https://picsum.photos/seed/people1/800/600" alt="Portrait in soft light" />
+      <figcaption class="caption">Portrait in soft light</figcaption>
+    </figure>
+    <figure class="item" data-category="animals" data-caption="Curious fox in the woods">
+      <img loading="lazy" src="https://picsum.photos/seed/animals1/800/600" alt="Curious fox" />
+      <figcaption class="caption">Curious fox in the woods</figcaption>
+    </figure>
+    <figure class="item" data-category="nature" data-caption="Waterfall rush">
+      <img loading="lazy" src="https://picsum.photos/seed/nature2/800/600" alt="Waterfall in a forest" />
+      <figcaption class="caption">Waterfall rush</figcaption>
+    </figure>
+    <figure class="item" data-category="city" data-caption="Neon street reflections">
+      <img loading="lazy" src="https://picsum.photos/seed/city2/800/600" alt="Neon reflections on wet street" />
+      <figcaption class="caption">Neon street reflections</figcaption>
+    </figure>
+    <figure class="item" data-category="people" data-caption="Friends at the fair">
+      <img loading="lazy" src="https://picsum.photos/seed/people2/800/600" alt="Friends at a fair" />
+      <figcaption class="caption">Friends at the fair</figcaption>
+    </figure>
+    <figure class="item" data-category="animals" data-caption="Herd crossing the river">
+      <img loading="lazy" src="https://picsum.photos/seed/animals2/800/600" alt="Animals crossing a river" />
+      <figcaption class="caption">Herd crossing the river</figcaption>
+    </figure>
+    <figure class="item" data-category="nature" data-caption="Stars over the dunes">
+      <img loading="lazy" src="https://picsum.photos/seed/nature3/800/600" alt="Starry night over dunes" />
+      <figcaption class="caption">Stars over the dunes</figcaption>
+    </figure>
+    <figure class="item" data-category="city" data-caption="Old town alley">
+      <img loading="lazy" src="https://picsum.photos/seed/city3/800/600" alt="Old town alley" />
+      <figcaption class="caption">Old town alley</figcaption>
+    </figure>
+    <figure class="item" data-category="people" data-caption="Skater in motion">
+      <img loading="lazy" src="https://picsum.photos/seed/people3/800/600" alt="Skater in motion" />
+      <figcaption class="caption">Skater in motion</figcaption>
+    </figure>
+    <figure class="item" data-category="animals" data-caption="Parrot splash of color">
+      <img loading="lazy" src="https://picsum.photos/seed/animals3/800/600" alt="Colorful parrot" />
+      <figcaption class="caption">Parrot splash of color</figcaption>
+    </figure>
+  </main>
+
+  <div class="lightbox" id="lightbox" aria-modal="true" role="dialog" aria-label="Image viewer">
+    <div class="lb-inner">
+      <div class="lb-img-wrap">
+        <img class="lb-img" id="lbImg" alt="" />
+        <div class="lb-toolbar">
+          <button class="btn" id="closeBtn" aria-label="Close (Esc)">✕</button>
+          <span class="btn" style="cursor:default">Use ← / → keys</span>
+        </div>
+        <div class="lb-nav">
+          <button id="prevBtn" aria-label="Previous">⟨</button>
+          <button id="nextBtn" aria-label="Next">⟩</button>
+        </div>
+      </div>
+      <div class="lb-caption" id="lbCap"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Tip: Click any image to open the lightbox. Navigate with the on-screen buttons or your keyboard <span class="kbd">←</span> <span class="kbd">→</span> and close with <span class="kbd">Esc</span>.</p>
+  </footer>
+
+  <script>
+    const chips = document.querySelectorAll('.chip');
+    const searchInput = document.getElementById('search');
+    const fxSelect = document.getElementById('fx');
+    const items = Array.from(document.querySelectorAll('.item'));
+    const gallery = document.getElementById('gallery');
+
+    fxSelect.addEventListener('change', () => {
+      gallery.style.setProperty('--img-filter', fxSelect.value === 'none' ? 'none' : fxSelect.value);
+    });
+
+    chips.forEach(chip => chip.addEventListener('click', () => {
+      chips.forEach(c => c.setAttribute('aria-pressed', 'false'));
+      chip.setAttribute('aria-pressed', 'true');
+      applyFilters();
+    }));
+
+    searchInput.addEventListener('input', applyFilters);
+
+    function applyFilters(){
+      const active = document.querySelector('.chip[aria-pressed="true"]').dataset.filter;
+      const q = searchInput.value.trim().toLowerCase();
+      items.forEach(it => {
+        const catOk = active === 'all' || it.dataset.category === active;
+        const textOk = !q || (it.dataset.caption.toLowerCase().includes(q));
+        it.classList.toggle('hide', !(catOk && textOk));
+      });
+    }
+
+    const lb = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lbImg');
+    const lbCap = document.getElementById('lbCap');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const closeBtn = document.getElementById('closeBtn');
+
+    let currentIndex = -1;
+
+    function visibleItems(){
+      return items.filter(i => !i.classList.contains('hide'));
+    }
+
+    function openAt(idx){
+      const vis = visibleItems();
+      if(!vis.length) return;
+      currentIndex = ((idx % vis.length) + vis.length) % vis.length;
+      const fig = vis[currentIndex];
+      const img = fig.querySelector('img');
+      lbImg.src = img.src;
+      lbImg.alt = img.alt;
+      lbCap.textContent = fig.dataset.caption || img.alt || '';
+      lb.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLb(){
+      lb.classList.remove('show');
+      document.body.style.overflow = '';
+      currentIndex = -1;
+    }
+
+    items.forEach((it, i) => it.addEventListener('click', () => {
+      const vis = visibleItems();
+      const idxInVisible = vis.indexOf(it);
+      openAt(idxInVisible === -1 ? 0 : idxInVisible);
+    }));
+
+    prevBtn.addEventListener('click', () => openAt(currentIndex - 1));
+    nextBtn.addEventListener('click', () => openAt(currentIndex + 1));
+
+    closeBtn.addEventListener('click', closeLb);
+    lb.addEventListener('click', (e) => { if(e.target === lb) closeLb(); });
+
+    window.addEventListener('keydown', (e) => {
+      if(!lb.classList.contains('show')) return;
+      if(e.key === 'Escape') closeLb();
+      if(e.key === 'ArrowLeft') openAt(currentIndex - 1);
+      if(e.key === 'ArrowRight') openAt(currentIndex + 1);
+    });
+
+    applyFilters();
+  </script>
+</body>
+</html>
